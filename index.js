@@ -117,14 +117,28 @@ const app = express();
 const fs = require("fs");
 const jsonData = require('./filefolder/MOCK_DATA.json')
 
+///Middleware
 app.use(express.json());
 
+///Middleware
+
+app.use((req, res, next) => {
+    fs.appendFile('./filefolder/log.txt', `${new Date().toLocaleString()} ${req.ip} ${req.method} ${req.path}\n`,
+        (err, data) => {
+            next();
+        }
+    );
+});
 
 app.get("/api/users", (req, res) => {
     return res.json(jsonData)
 })
 
 app.post("/api/users", (req, res) => {
+    if (!req.body || !req.body.first_name || !req.body.last_name || !req.body.email || !req.body.gender) {
+        
+        return res.status(404).json("All fields are required");
+    }
 
     jsonData.push({ ...req.body, id: jsonData.length + 1 })
     fs.writeFile('./filefolder/MOCK_DATA.json', JSON.stringify(jsonData), (err, data) => {
@@ -143,6 +157,8 @@ app.post("/api/users", (req, res) => {
 app.get("/api/users/:id", (req, res) => {
     const id = Number(req.params.id)
     const user = jsonData.find((user) => user.id === id);
+    if (!user) return res.status(404).json("User not found");
+
     return res.json(user)
 })
 
@@ -152,19 +168,19 @@ app.put("/api/users/:id", (req, res) => {
     const id = Number(req.params.id)
     const a = fs.readFileSync("./filefolder/MOCK_DATA.json", 'utf-8')
     let data = JSON.parse(a);
-    try{
-        let user= data.map((obj)=>{
-            if(obj.id===id){
-                obj.id=id,
-                obj.first_name= req.body.first_name !== undefined ? req.body.first_name:obj.first_name,
-                obj.last_name= req.body.last_name !== undefined ? req.body.last_name:obj.last_name,
-                obj.email= req.body.email !== undefined ? req.body.email:obj.email,
-                obj.gender = req.body.gender !== undefined ? req.body.gender : obj.gender;
+    try {
+        let user = data.map((obj) => {
+            if (obj.id === id) {
+                obj.id = id,
+                    obj.first_name = req.body.first_name !== undefined ? req.body.first_name : obj.first_name,
+                    obj.last_name = req.body.last_name !== undefined ? req.body.last_name : obj.last_name,
+                    obj.email = req.body.email !== undefined ? req.body.email : obj.email,
+                    obj.gender = req.body.gender !== undefined ? req.body.gender : obj.gender;
 
             }
             return obj;
-          
-            
+
+
         });
         fs.writeFile('./filefolder/MOCK_DATA.json', JSON.stringify(user), (err, data) => {
             if (err) {
@@ -173,12 +189,12 @@ app.put("/api/users/:id", (req, res) => {
             else {
                 return res.json(user)
             }
-    
+
         })
-        
+
 
     }
-    catch{
+    catch {
 
         return res.json("Invalid request")
     }
@@ -199,7 +215,7 @@ app.delete("/api/users/:id", (req, res) => {
 
     const a = fs.readFileSync("./filefolder/MOCK_DATA.json", 'utf-8')
     let data = JSON.parse(a);
-    try{
+    try {
         const user = data.find((user) => user.id === id);
         console.log(data)
 
@@ -209,9 +225,9 @@ app.delete("/api/users/:id", (req, res) => {
         //        console.log("obj")
 
         //     }
-            
-          
-            
+
+
+
         // });
         // console.log(user)
         // fs.writeFile('./filefolder/MOCK_DATA.json', JSON.stringify(user), (err, data) => {
@@ -221,12 +237,12 @@ app.delete("/api/users/:id", (req, res) => {
         //     else {
         //         return res.json(user)
         //     }
-    
+
         // })
-        
+
 
     }
-    catch{
+    catch {
 
         return res.json("Invalid request")
     }
